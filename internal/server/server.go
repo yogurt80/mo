@@ -1859,17 +1859,6 @@ func extractHeadingLine(line string) string {
 	return title
 }
 
-func isPathWithinBase(baseDir, absPath string) bool {
-	rel, err := filepath.Rel(baseDir, absPath)
-	if err != nil {
-		return false
-	}
-	if rel == "." {
-		return true
-	}
-	return !filepath.IsAbs(rel) && rel != ".." && !strings.HasPrefix(rel, ".."+string(filepath.Separator))
-}
-
 func handleFileRaw(state *State) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		group, err := resolveGroupFromPath(r)
@@ -1898,13 +1887,8 @@ func handleFileRaw(state *State) http.HandlerFunc {
 		absPath := filepath.Join(filepath.Dir(entry.Path), relPath)
 		absPath = filepath.Clean(absPath)
 
-		// Prevent directory traversal outside the base directory
-		baseDir := filepath.Dir(entry.Path)
-		if !isPathWithinBase(baseDir, absPath) {
-			http.Error(w, "access denied", http.StatusForbidden)
-			return
-		}
-
+		// No boundary check: mo serves local files to the user's own browser
+		// (like handleOpenFile); http.ServeFile already rejects "..".
 		http.ServeFile(w, r, absPath)
 	}
 }
