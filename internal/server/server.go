@@ -1887,13 +1887,8 @@ func handleFileRaw(state *State) http.HandlerFunc {
 		absPath := filepath.Join(filepath.Dir(entry.Path), relPath)
 		absPath = filepath.Clean(absPath)
 
-		// Prevent directory traversal outside the base directory
-		baseDir := filepath.Dir(entry.Path)
-		if !strings.HasPrefix(absPath, baseDir) {
-			http.Error(w, "access denied", http.StatusForbidden)
-			return
-		}
-
+		// No boundary check: mo serves local files to the user's own browser
+		// (like handleOpenFile); http.ServeFile already rejects "..".
 		http.ServeFile(w, r, absPath)
 	}
 }
