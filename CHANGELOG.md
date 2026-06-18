@@ -1,5 +1,19 @@
 # Changelog
 
+## [v1.6.0](https://github.com/k1LoW/mo/compare/v1.5.6...v1.6.0) - 2026-06-18
+
+### New Features 🎉
+- feat(frontend): reveal active file label as a sticky bar on scroll by @k1LoW in https://github.com/k1LoW/mo/pull/232
+- feat(frontend): show active file name in header by @kyu08 in https://github.com/k1LoW/mo/pull/224
+- feat(frontend): open relative links in a new tab on modifier-click by @k1LoW in https://github.com/k1LoW/mo/pull/233
+### Dependency Updates ⬆️
+- chore(deps): bump the dependencies group with 2 updates by @dependabot[bot] in https://github.com/k1LoW/mo/pull/225
+- chore(deps): bump the dependencies group in /internal/frontend with 10 updates by @dependabot[bot] in https://github.com/k1LoW/mo/pull/226
+- chore(deps-dev): bump the dependencies group in /internal/frontend with 3 updates by @dependabot[bot] in https://github.com/k1LoW/mo/pull/229
+- chore(deps): bump golang.org/x/text from 0.37.0 to 0.38.0 in the dependencies group by @dependabot[bot] in https://github.com/k1LoW/mo/pull/228
+### Other Changes
+- migrate gofsnotify/fsnotify to fswatcher/fswatcher by @shogo82148 in https://github.com/k1LoW/mo/pull/231
+
 ## [v1.5.6](https://github.com/k1LoW/mo/compare/v1.5.5...v1.5.6) - 2026-06-04
 ### Dependency Updates ⬆️
 - chore(deps): bump the dependencies group in /internal/frontend with 10 updates by @dependabot[bot] in https://github.com/k1LoW/mo/pull/214
