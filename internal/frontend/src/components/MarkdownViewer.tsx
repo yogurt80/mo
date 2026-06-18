@@ -853,8 +853,11 @@ export function MarkdownViewer({
     <div className="flex items-start gap-2">
       <div className="min-w-0 flex-1">
         {/* Zero-height sticky wrapper: the label overlays the content top without
-            reserving layout space, so it never pushes the heading down. */}
-        <div className="sticky top-0 z-20 h-0">
+            reserving layout space, so it never pushes the heading down. The
+            negative top cancels the scroll container's p-8 top padding so the
+            bar pins flush under the global header instead of leaving a gap that
+            scrolling content would show through. */}
+        <div className="sticky -top-8 z-20 h-0">
           <div
             className={`absolute left-0 top-0 w-full border-b border-gh-border bg-gh-bg py-2 text-sm font-medium text-gh-text-secondary overflow-hidden text-ellipsis whitespace-nowrap transition-opacity duration-150${isWide ? "" : " max-w-[980px]"}${showStickyLabel ? "" : " pointer-events-none opacity-0"}`}
             title={uploaded ? fileName : filePath}
