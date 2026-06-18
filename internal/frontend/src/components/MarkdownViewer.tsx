@@ -813,19 +813,20 @@ export function MarkdownViewer({
       setShowFullLabel(false);
       return;
     }
-    // Fold the title into the label once the document's first heading scrolls up
-    // behind the sticky bar. A direct geometry read avoids the
-    // IntersectionObserver first-callback race that can latch a stale rect when
-    // content mounts.
+    // The first heading is stable for this render, so query it once and reuse it
+    // across scroll/resize updates instead of re-querying on every frame.
+    const heading = article.querySelector("h1, h2, h3, h4, h5, h6");
+    if (!heading) {
+      // Nothing to fold in: the label is already just the file name.
+      setShowFullLabel(false);
+      return;
+    }
+    // Fold the title into the label once that heading scrolls up behind the
+    // sticky bar. A direct geometry read avoids the IntersectionObserver
+    // first-callback race that can latch a stale rect when content mounts.
     let frame = 0;
     const update = () => {
       frame = 0;
-      const heading = article.querySelector("h1, h2, h3, h4, h5, h6");
-      if (!heading) {
-        // Nothing to fold in: the label is already just the file name.
-        setShowFullLabel(false);
-        return;
-      }
       setShowFullLabel(
         heading.getBoundingClientRect().bottom <= label.getBoundingClientRect().bottom,
       );
@@ -841,7 +842,8 @@ export function MarkdownViewer({
       scrollContainer.removeEventListener("scroll", schedule);
       window.removeEventListener("resize", schedule);
     };
-  }, [loading, renderedContent, scrollContainer]);
+    // isWide/fontSize/isTocOpen change the layout, so recompute on those too.
+  }, [loading, renderedContent, scrollContainer, isWide, fontSize, isTocOpen]);
 
   if (loading) {
     return (
