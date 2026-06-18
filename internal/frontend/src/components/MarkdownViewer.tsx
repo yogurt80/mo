@@ -21,7 +21,6 @@ import { resolveLink, resolveImageSrc, extractLanguage } from "../utils/resolve"
 import { parseFrontmatter } from "../utils/frontmatter";
 import { stripMdxSyntax } from "../utils/mdx";
 import { isMarkdownFile, detectLanguage } from "../utils/filetype";
-import { formatFileLabel } from "../utils/fileLabel";
 import type { ZoomContent } from "./ZoomModal";
 import type { TocHeading } from "./TocPanel";
 import type { Components } from "react-markdown";
@@ -863,7 +862,14 @@ export function MarkdownViewer({
           className={`sticky -top-8 z-20 mb-4 border-b border-gh-border bg-gh-bg py-2 text-sm font-medium text-right text-gh-text-secondary overflow-hidden text-ellipsis whitespace-nowrap${isWide ? "" : " max-w-[980px]"}`}
           title={uploaded ? fileName : filePath}
         >
-          {showFullLabel ? formatFileLabel(fileName, title) : fileName}
+          {showFullLabel && title !== undefined ? (
+            <>
+              <span className="font-bold">{title}</span>
+              {` - ${fileName}`}
+            </>
+          ) : (
+            fileName
+          )}
         </div>
         <article
           ref={articleRef}
