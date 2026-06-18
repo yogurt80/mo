@@ -68,6 +68,7 @@ interface MarkdownViewerProps {
   fileName: string;
   title?: string;
   filePath?: string;
+  scrollContainer?: HTMLElement | null;
   activeGroup: string;
   revision: number;
   onFileOpened: (fileId: string) => void;
@@ -531,6 +532,7 @@ export function MarkdownViewer({
   fileName,
   title,
   filePath,
+  scrollContainer,
   activeGroup,
   revision,
   onFileOpened,
@@ -551,7 +553,11 @@ export function MarkdownViewer({
   const [loading, setLoading] = useState(true);
   const [isRawView, setIsRawView] = useState(false);
   const [searchHitMarkers, setSearchHitMarkers] = useState<SearchHitMarker[]>([]);
+  // The sticky file label stays hidden until the document's own title scrolls
+  // off the top, so it never duplicates the heading the reader can already see.
+  const [showStickyLabel, setShowStickyLabel] = useState(false);
   const articleRef = useRef<HTMLElement>(null);
+  const titleSentinelRef = useRef<HTMLDivElement>(null);
   const [prevFetchKey, setPrevFetchKey] = useState({ fileId, revision });
 
   if (fileId !== prevFetchKey.fileId || revision !== prevFetchKey.revision) {
@@ -799,6 +805,42 @@ export function MarkdownViewer({
     };
   }, [loading, renderedContent, isMarkdown, isRawView, searchQuery]);
 
+  useEffect(() => {
+    const article = articleRef.current;
+    if (loading || !scrollContainer || !article) {
+      setShowStickyLabel(false);
+      return;
+    }
+    // Reveal the label only after the document's own title (its first heading)
+    // scrolls above the top edge, so it never duplicates a heading still on
+    // screen. Title-less files fall back to a sentinel at the very top.
+    // A direct geometry read avoids the IntersectionObserver first-callback race
+    // that can latch a stale rect when content mounts.
+    let frame = 0;
+    const update = () => {
+      frame = 0;
+      const target = article.querySelector("h1, h2, h3, h4, h5, h6") ?? titleSentinelRef.current;
+      if (!target) {
+        setShowStickyLabel(false);
+        return;
+      }
+      setShowStickyLabel(
+        target.getBoundingClientRect().bottom <= scrollContainer.getBoundingClientRect().top,
+      );
+    };
+    const schedule = () => {
+      if (frame === 0) frame = requestAnimationFrame(update);
+    };
+    update();
+    scrollContainer.addEventListener("scroll", schedule, { passive: true });
+    window.addEventListener("resize", schedule);
+    return () => {
+      if (frame !== 0) cancelAnimationFrame(frame);
+      scrollContainer.removeEventListener("scroll", schedule);
+      window.removeEventListener("resize", schedule);
+    };
+  }, [loading, renderedContent, scrollContainer]);
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-50 text-gh-text-secondary text-sm">
@@ -810,16 +852,21 @@ export function MarkdownViewer({
   return (
     <div className="flex items-start gap-2">
       <div className="min-w-0 flex-1">
-        <div
-          className={`mx-auto mb-4 border-b border-gh-border pb-2 text-sm font-medium text-gh-text-secondary overflow-hidden text-ellipsis whitespace-nowrap${isWide ? "" : " max-w-[980px]"}`}
-          title={uploaded ? fileName : filePath}
-        >
-          {formatFileLabel(fileName, title)}
+        {/* Zero-height sticky wrapper: the label overlays the content top without
+            reserving layout space, so it never pushes the heading down. */}
+        <div className="sticky top-0 z-20 h-0">
+          <div
+            className={`absolute left-0 top-0 w-full border-b border-gh-border bg-gh-bg py-2 text-sm font-medium text-gh-text-secondary overflow-hidden text-ellipsis whitespace-nowrap transition-opacity duration-150${isWide ? "" : " max-w-[980px]"}${showStickyLabel ? "" : " pointer-events-none opacity-0"}`}
+            title={uploaded ? fileName : filePath}
+          >
+            {formatFileLabel(fileName, title)}
+          </div>
         </div>
         <article
           ref={articleRef}
           className={`markdown-body relative overflow-visible${isWide ? " markdown-body--wide" : ""}${fontSize !== "medium" ? ` markdown-body--${fontSize}` : ""}`}
         >
+          <div ref={titleSentinelRef} aria-hidden="true" className="h-0" />
           <div className="pointer-events-none absolute inset-0 z-10 overflow-visible">
             {searchHitMarkers.map((marker, index) => (
               <div

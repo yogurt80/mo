@@ -510,6 +510,7 @@ export function App() {
                 fileName={activeFileName}
                 title={activeFile?.title}
                 filePath={activeFile?.path}
+                scrollContainer={scrollContainer}
                 activeGroup={activeGroup}
                 revision={contentRevision}
                 onFileOpened={handleFileOpened}
