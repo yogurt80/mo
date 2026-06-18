@@ -859,7 +859,7 @@ export function MarkdownViewer({
             through. */}
         <div
           ref={stickyLabelRef}
-          className={`sticky -top-8 z-20 mb-4 border-b border-gh-border bg-gh-bg py-2 text-sm font-medium text-right text-gh-text-secondary overflow-hidden text-ellipsis whitespace-nowrap${isWide ? "" : " max-w-[980px]"}`}
+          className={`sticky -top-8 z-20 mx-auto mb-4 border-b border-gh-border bg-gh-bg py-2 text-sm font-medium text-right text-gh-text-secondary overflow-hidden text-ellipsis whitespace-nowrap${isWide ? "" : " max-w-[980px]"}`}
           title={uploaded ? fileName : filePath}
         >
           {showFullLabel && title !== undefined ? (
