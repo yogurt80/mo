@@ -1,5 +1,13 @@
 # Changelog
 
+## [v1.6.1](https://github.com/k1LoW/mo/compare/v1.6.0...v1.6.1) - 2026-06-22
+
+### Dependency Updates ⬆️
+- chore(deps): bump the dependencies group with 2 updates by @dependabot[bot] in https://github.com/k1LoW/mo/pull/234
+- chore(deps-dev): bump the dependencies group in /internal/frontend with 7 updates by @dependabot[bot] in https://github.com/k1LoW/mo/pull/235
+### Other Changes
+- fix(deps): bump vulnerable frontend dependencies by @k1LoW in https://github.com/k1LoW/mo/pull/237
+
 ## [v1.6.0](https://github.com/k1LoW/mo/compare/v1.5.6...v1.6.0) - 2026-06-18
 
 ### New Features 🎉
