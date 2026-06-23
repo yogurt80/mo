@@ -1600,8 +1600,27 @@ func handleReorderFiles(state *State) http.HandlerFunc {
 func handleGroups(state *State) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		groups := state.Groups()
+		patternsByGroup := make(map[string][]string)
+		for _, p := range state.Patterns() {
+			patternsByGroup[p.Group] = append(patternsByGroup[p.Group], p.Pattern)
+		}
+		result := make([]statusGroup, len(groups))
+		for i, g := range groups {
+			// Pattern-only groups created via AddPattern leave Files as nil,
+			// which encoding/json renders as `"files": null`. The frontend
+			// assumes the field is always an array, so swap a nil slice for
+			// an empty literal. An already-empty non-nil slice is left alone
+			// (encoding/json renders it as `[]` already).
+			if g.Files == nil {
+				g.Files = []*FileEntry{}
+			}
+			result[i] = statusGroup{
+				Group:    g,
+				Patterns: patternsByGroup[g.Name],
+			}
+		}
 		w.Header().Set("Content-Type", "application/json")
-		if err := json.NewEncoder(w).Encode(groups); err != nil {
+		if err := json.NewEncoder(w).Encode(result); err != nil {
 			slog.Error("failed to encode response", "error", err)
 		}
 	}

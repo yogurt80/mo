@@ -2055,6 +2055,113 @@ func TestHandleGroups_IncludesTitle(t *testing.T) {
 	}
 }
 
+func TestHandleGroups_IncludesPatterns(t *testing.T) {
+	s := newTestState(t)
+
+	dir := t.TempDir()
+	os.WriteFile(filepath.Join(dir, "a.md"), []byte("# A"), 0o600) //nolint:errcheck
+	pattern := filepath.Join(dir, "*.md")
+	if _, err := s.AddPattern(pattern, DefaultGroup); err != nil {
+		t.Fatalf("AddPattern: %v", err)
+	}
+
+	plainDir := t.TempDir()
+	plainFile := filepath.Join(plainDir, "plain.md")
+	os.WriteFile(plainFile, []byte("# Plain"), 0o600) //nolint:errcheck
+	if _, err := s.AddFile(plainFile, "docs"); err != nil {
+		t.Fatalf("AddFile: %v", err)
+	}
+
+	handler := NewHandler(s)
+	req := httptest.NewRequest("GET", "/_/api/groups", nil)
+	rec := httptest.NewRecorder()
+	handler.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want 200", rec.Code)
+	}
+
+	rawBody := rec.Body.Bytes()
+	var groups []struct {
+		Name     string   `json:"name"`
+		Patterns []string `json:"patterns,omitempty"`
+	}
+	if err := json.Unmarshal(rawBody, &groups); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+
+	byName := make(map[string][]string, len(groups))
+	for _, g := range groups {
+		byName[g.Name] = g.Patterns
+	}
+
+	got, ok := byName[DefaultGroup]
+	if !ok {
+		t.Fatalf("default group missing from response: %+v", groups)
+	}
+	if len(got) != 1 || got[0] != pattern {
+		t.Errorf("default group patterns = %v, want [%s]", got, pattern)
+	}
+
+	if pats, ok := byName["docs"]; !ok {
+		t.Errorf("docs group missing from response: %+v", groups)
+	} else if len(pats) != 0 {
+		t.Errorf("docs group patterns = %v, want omitted (group has no patterns)", pats)
+	}
+
+	// Verify `omitempty`: docs has no patterns so the JSON key should be absent.
+	var rawGroups []map[string]json.RawMessage
+	if err := json.Unmarshal(rawBody, &rawGroups); err != nil {
+		t.Fatalf("decode raw: %v", err)
+	}
+	for _, g := range rawGroups {
+		name := strings.Trim(string(g["name"]), `"`)
+		if name == "docs" {
+			if _, has := g["patterns"]; has {
+				t.Errorf("expected omitempty for docs group, but patterns key is present: %s", rawBody)
+			}
+		}
+	}
+}
+
+func TestHandleGroups_FilesAlwaysArrayForPatternOnlyGroup(t *testing.T) {
+	s := newTestState(t)
+
+	// Pattern in an empty directory: AddPattern creates the group with a nil
+	// Files slice. Without normalization the JSON would encode as
+	// `"files": null`, which breaks the frontend's `group.files.length`.
+	dir := t.TempDir()
+	pattern := filepath.Join(dir, "*.md")
+	if _, err := s.AddPattern(pattern, DefaultGroup); err != nil {
+		t.Fatalf("AddPattern: %v", err)
+	}
+
+	handler := NewHandler(s)
+	req := httptest.NewRequest("GET", "/_/api/groups", nil)
+	rec := httptest.NewRecorder()
+	handler.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want 200", rec.Code)
+	}
+
+	raw := rec.Body.String()
+	if strings.Contains(raw, `"files":null`) {
+		t.Errorf("response contains \"files\":null, want \"files\":[]: %s", raw)
+	}
+
+	var groups []Group
+	if err := json.Unmarshal(rec.Body.Bytes(), &groups); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if len(groups) != 1 {
+		t.Fatalf("got %d groups, want 1", len(groups))
+	}
+	if len(groups[0].Files) != 0 {
+		t.Errorf("len(Files) = %d, want 0", len(groups[0].Files))
+	}
+}
+
 func TestCSPHeader(t *testing.T) {
 	s := newTestState(t)
 	handler := NewHandler(s)
