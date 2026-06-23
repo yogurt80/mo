@@ -5,6 +5,11 @@ import type { Group } from "../hooks/useApi";
 
 const writeText = vi.fn();
 
+// Capture the real `window.location` descriptor once so each test can
+// override only the port and the original Location object is restored
+// after the test runs (preventing leakage into other test files).
+const originalLocationDescriptor = Object.getOwnPropertyDescriptor(window, "location");
+
 beforeEach(() => {
   writeText.mockReset();
   writeText.mockResolvedValue(undefined);
@@ -19,7 +24,9 @@ beforeEach(() => {
 });
 
 afterEach(() => {
-  setLocationPort("6275");
+  if (originalLocationDescriptor) {
+    Object.defineProperty(window, "location", originalLocationDescriptor);
+  }
 });
 
 function setLocationPort(port: string) {
