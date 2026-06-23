@@ -14,6 +14,7 @@ import { ZoomModal } from "./components/ZoomModal";
 import type { ZoomContent } from "./components/ZoomModal";
 import { TocPanel } from "./components/TocPanel";
 import type { TocHeading } from "./components/TocPanel";
+import { EmptyGroupMessage } from "./components/EmptyGroupMessage";
 import { useSSE } from "./hooks/useSSE";
 import { useFileDrop } from "./hooks/useFileDrop";
 import { useActiveHeading } from "./hooks/useActiveHeading";
@@ -306,9 +307,13 @@ export function App() {
     };
   }, [searchQuery, activeGroup]);
 
+  const activeGroupData = useMemo(
+    () => groups.find((g) => g.name === activeGroup),
+    [groups, activeGroup],
+  );
   const activeFile = useMemo(
-    () => groups.find((g) => g.name === activeGroup)?.files.find((f) => f.id === activeFileId),
-    [groups, activeGroup, activeFileId],
+    () => activeGroupData?.files.find((f) => f.id === activeFileId),
+    [activeGroupData, activeFileId],
   );
   const activeFileName = activeFile?.name ?? "";
   const tocOpen = isTocOpenForFile(tocOpenMap, activeFileId, activeFileName);
@@ -561,9 +566,7 @@ export function App() {
                 searchQuery={searchQuery}
               />
             ) : (
-              <div className="flex items-center justify-center h-50 text-gh-text-secondary text-sm">
-                No file selected
-              </div>
+              <EmptyGroupMessage group={activeGroupData} />
             )}
           </div>
         </main>

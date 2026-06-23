@@ -1600,8 +1600,15 @@ func handleReorderFiles(state *State) http.HandlerFunc {
 func handleGroups(state *State) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		groups := state.Groups()
+		result := make([]statusGroup, len(groups))
+		for i, g := range groups {
+			result[i] = statusGroup{
+				Group:    g,
+				Patterns: state.PatternsForGroup(g.Name),
+			}
+		}
 		w.Header().Set("Content-Type", "application/json")
-		if err := json.NewEncoder(w).Encode(groups); err != nil {
+		if err := json.NewEncoder(w).Encode(result); err != nil {
 			slog.Error("failed to encode response", "error", err)
 		}
 	}
