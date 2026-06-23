@@ -1600,11 +1600,15 @@ func handleReorderFiles(state *State) http.HandlerFunc {
 func handleGroups(state *State) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		groups := state.Groups()
+		patternsByGroup := make(map[string][]string)
+		for _, p := range state.Patterns() {
+			patternsByGroup[p.Group] = append(patternsByGroup[p.Group], p.Pattern)
+		}
 		result := make([]statusGroup, len(groups))
 		for i, g := range groups {
 			result[i] = statusGroup{
 				Group:    g,
-				Patterns: state.PatternsForGroup(g.Name),
+				Patterns: patternsByGroup[g.Name],
 			}
 		}
 		w.Header().Set("Content-Type", "application/json")
