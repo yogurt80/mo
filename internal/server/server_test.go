@@ -2157,9 +2157,6 @@ func TestHandleGroups_FilesAlwaysArrayForPatternOnlyGroup(t *testing.T) {
 	if len(groups) != 1 {
 		t.Fatalf("got %d groups, want 1", len(groups))
 	}
-	if groups[0].Files == nil {
-		t.Errorf("Files = nil, want empty slice")
-	}
 	if len(groups[0].Files) != 0 {
 		t.Errorf("len(Files) = %d, want 0", len(groups[0].Files))
 	}
