@@ -300,9 +300,20 @@ function MermaidImageCopyButton({ svg }: { svg: string }) {
 
 function svgToPngBlob(svgString: string): Promise<Blob> {
   return new Promise((resolve, reject) => {
+    // Mermaid flowchart/stateDiagram labels embed HTML void elements such as
+    // <br> inside <foreignObject>, which the strict "image/svg+xml" parser
+    // rejects silently (documentElement becomes <html> and the width, height,
+    // and viewBox lookups all return null). Parsing as "text/html" is lenient
+    // and still preserves the case of SVG attributes (viewBox,
+    // preserveAspectRatio, etc.). XMLSerializer then normalizes <br> to <br/>
+    // so the resulting data URL loads cleanly as an SVG image.
     const parser = new DOMParser();
-    const doc = parser.parseFromString(svgString, "image/svg+xml");
-    const svgEl = doc.documentElement;
+    const doc = parser.parseFromString(svgString, "text/html");
+    const svgEl = doc.querySelector("svg");
+    if (!svgEl) {
+      reject(new Error("No SVG element found"));
+      return;
+    }
 
     // Ensure xmlns is present for standalone SVG rendering
     if (!svgEl.getAttribute("xmlns")) {
