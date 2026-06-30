@@ -10,6 +10,12 @@ vi.mock("mermaid", () => ({
   },
 }));
 
+vi.mock("plantuml-encoder", () => ({
+  default: {
+    encode: vi.fn(() => "encoded-plantuml"),
+  },
+}));
+
 vi.mock("../hooks/useApi", () => ({
   fetchFileContent: vi.fn().mockResolvedValue({ content: "# Hello", baseDir: "/repo" }),
   openRelativeFile: vi.fn(),
@@ -158,5 +164,22 @@ describe("MarkdownViewer relative links", () => {
     expect(notPrevented).toBe(true); // default preserved → new browser tab
     expect(openRelativeFile).not.toHaveBeenCalled();
     expect(onFileOpened).not.toHaveBeenCalled();
+  });
+});
+
+describe("MarkdownViewer PlantUML", () => {
+  it("renders plantuml fences through the public PlantUML SVG endpoint", async () => {
+    vi.mocked(fetchFileContent).mockResolvedValue({
+      content: "```plantuml\n@startuml\nAlice -> Bob\n@enduml\n```",
+      baseDir: "/repo",
+    });
+
+    renderViewer();
+
+    const diagram = await screen.findByAltText("PlantUML diagram");
+    expect(diagram).toHaveAttribute(
+      "src",
+      "https://www.plantuml.com/plantuml/svg/encoded-plantuml",
+    );
   });
 });

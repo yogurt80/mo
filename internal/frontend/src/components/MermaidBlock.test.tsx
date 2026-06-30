@@ -1,11 +1,17 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
-import { MermaidBlock } from "./MarkdownViewer";
+import { MermaidBlock, PlantUmlBlock } from "./MarkdownViewer";
 
 vi.mock("mermaid", () => ({
   default: {
     initialize: vi.fn(),
     render: vi.fn(),
+  },
+}));
+
+vi.mock("plantuml-encoder", () => ({
+  default: {
+    encode: vi.fn(() => "encoded-plantuml"),
   },
 }));
 
@@ -177,5 +183,30 @@ describe("MermaidBlock", () => {
     globalThis.Image = originalImage;
     globalThis.ClipboardItem = originalClipboardItem;
     vi.mocked(document.createElement).mockRestore();
+  });
+});
+
+describe("PlantUmlBlock", () => {
+  it("renders a PlantUML server SVG image", () => {
+    render(<PlantUmlBlock code="@startuml\nAlice -> Bob\n@enduml" />);
+
+    expect(screen.getByAltText("PlantUML diagram")).toHaveAttribute(
+      "src",
+      "https://www.plantuml.com/plantuml/svg/encoded-plantuml",
+    );
+    expect(screen.getByTitle("Copy code")).toBeInTheDocument();
+  });
+
+  it("opens zoom with the PlantUML image URL", () => {
+    const onZoom = vi.fn();
+    render(<PlantUmlBlock code="@startuml\nAlice -> Bob\n@enduml" onZoom={onZoom} />);
+
+    fireEvent.click(screen.getByTitle("Zoom"));
+
+    expect(onZoom).toHaveBeenCalledWith({
+      type: "image",
+      src: "https://www.plantuml.com/plantuml/svg/encoded-plantuml",
+      alt: "PlantUML diagram",
+    });
   });
 });

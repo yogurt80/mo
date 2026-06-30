@@ -10,6 +10,7 @@ import { rehypeGithubAlerts } from "rehype-github-alerts";
 import "katex/dist/katex.min.css";
 import { codeToHtml } from "shiki";
 import mermaid from "mermaid";
+import plantumlEncoder from "plantuml-encoder";
 import { fetchFileContent, openRelativeFile } from "../hooks/useApi";
 import { isPlainLeftClick } from "../utils/linkClick";
 import { escapeRegExp } from "../utils/regex";
@@ -155,6 +156,8 @@ function getMermaidTheme(): "dark" | "default" {
 let mermaidCounter = 0;
 let mermaidQueue: Promise<void> = Promise.resolve();
 
+const PLANTUML_SERVER = "https://www.plantuml.com/plantuml";
+
 function cleanupMermaidErrors() {
   document.querySelectorAll("[id^='dmermaid-']").forEach((el) => el.remove());
 }
@@ -245,6 +248,28 @@ export function MermaidBlock({
         <code>{code}</code>
       </pre>
       <CodeBlockCopyButton code={code} />
+    </div>
+  );
+}
+
+export function PlantUmlBlock({
+  code,
+  onZoom,
+}: {
+  code: string;
+  onZoom?: (content: ZoomContent) => void;
+}) {
+  const src = `${PLANTUML_SERVER}/svg/${plantumlEncoder.encode(code)}`;
+
+  return (
+    <div className="relative group">
+      <div className="overflow-x-auto">
+        <img src={src} alt="PlantUML diagram" />
+      </div>
+      {onZoom && (
+        <ZoomButton onClick={() => onZoom({ type: "image", src, alt: "PlantUML diagram" })} />
+      )}
+      <CodeBlockCopyButton code={code} themed />
     </div>
   );
 }
@@ -625,6 +650,9 @@ export function MarkdownViewer({
         if (language) {
           if (language === "mermaid") {
             return <MermaidBlock code={code} onZoom={onZoom} />;
+          }
+          if (language === "plantuml" || language === "puml") {
+            return <PlantUmlBlock code={code} onZoom={onZoom} />;
           }
           return <CodeBlock language={language} code={code} />;
         }
