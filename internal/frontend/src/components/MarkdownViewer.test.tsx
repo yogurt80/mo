@@ -12,7 +12,9 @@ vi.mock("mermaid", () => ({
 
 vi.mock("plantuml-encoder", () => ({
   default: {
-    encode: vi.fn(() => "encoded-plantuml"),
+    encode: vi.fn((source: string) =>
+      source.includes("!theme cyborg") ? "encoded-dark-plantuml" : "encoded-plantuml",
+    ),
   },
 }));
 
@@ -168,6 +170,10 @@ describe("MarkdownViewer relative links", () => {
 });
 
 describe("MarkdownViewer PlantUML", () => {
+  beforeEach(() => {
+    document.documentElement.removeAttribute("data-theme");
+  });
+
   it("renders plantuml fences through the public PlantUML SVG endpoint", async () => {
     vi.mocked(fetchFileContent).mockResolvedValue({
       content: "```plantuml\n@startuml\nAlice -> Bob\n@enduml\n```",

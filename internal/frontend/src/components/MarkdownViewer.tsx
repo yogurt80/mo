@@ -157,6 +157,22 @@ let mermaidCounter = 0;
 let mermaidQueue: Promise<void> = Promise.resolve();
 
 const PLANTUML_SERVER = "https://www.plantuml.com/plantuml";
+const PLANTUML_DARK_THEME = "cyborg";
+
+function getCurrentTheme(): "light" | "dark" {
+  return document.documentElement.getAttribute("data-theme") === "dark" ? "dark" : "light";
+}
+
+export function applyPlantUmlTheme(code: string, theme: "light" | "dark"): string {
+  if (theme !== "dark" || /^\s*!theme\s+/im.test(code)) {
+    return code;
+  }
+  return `!theme ${PLANTUML_DARK_THEME}\n${code}`;
+}
+
+function buildPlantUmlSrc(code: string, theme: "light" | "dark"): string {
+  return `${PLANTUML_SERVER}/svg/${plantumlEncoder.encode(applyPlantUmlTheme(code, theme))}`;
+}
 
 function cleanupMermaidErrors() {
   document.querySelectorAll("[id^='dmermaid-']").forEach((el) => el.remove());
@@ -259,16 +275,36 @@ export function PlantUmlBlock({
   code: string;
   onZoom?: (content: ZoomContent) => void;
 }) {
-  const src = `${PLANTUML_SERVER}/svg/${plantumlEncoder.encode(code)}`;
+  const [theme, setTheme] = useState<"light" | "dark">(() => getCurrentTheme());
+  const src = buildPlantUmlSrc(code, theme);
+
+  const handleZoom = async () => {
+    if (!onZoom) return;
+    try {
+      const res = await fetch(src);
+      if (!res.ok) throw new Error(`PlantUML SVG fetch failed: ${res.status}`);
+      const svg = await res.text();
+      onZoom({ type: "svg", svg });
+    } catch {
+      onZoom({ type: "image", src, alt: "PlantUML diagram" });
+    }
+  };
+
+  useEffect(() => {
+    const observer = new MutationObserver(() => setTheme(getCurrentTheme()));
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ["data-theme"],
+    });
+    return () => observer.disconnect();
+  }, []);
 
   return (
     <div className="relative group">
       <div className="overflow-x-auto">
         <img src={src} alt="PlantUML diagram" />
       </div>
-      {onZoom && (
-        <ZoomButton onClick={() => onZoom({ type: "image", src, alt: "PlantUML diagram" })} />
-      )}
+      {onZoom && <ZoomButton onClick={handleZoom} position="right-10" />}
       <CodeBlockCopyButton code={code} themed />
     </div>
   );

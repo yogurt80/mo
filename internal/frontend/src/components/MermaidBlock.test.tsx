@@ -11,11 +11,14 @@ vi.mock("mermaid", () => ({
 
 vi.mock("plantuml-encoder", () => ({
   default: {
-    encode: vi.fn(() => "encoded-plantuml"),
+    encode: vi.fn((source: string) =>
+      source.includes("!theme cyborg") ? "encoded-dark-plantuml" : "encoded-plantuml",
+    ),
   },
 }));
 
 import mermaid from "mermaid";
+import plantumlEncoder from "plantuml-encoder";
 
 const writeTextMock = vi.fn().mockResolvedValue(undefined);
 const writeMock = vi.fn().mockResolvedValue(undefined);
@@ -29,6 +32,7 @@ beforeEach(() => {
     writable: true,
     configurable: true,
   });
+  vi.stubGlobal("fetch", vi.fn());
 });
 
 describe("MermaidBlock", () => {
@@ -187,8 +191,12 @@ describe("MermaidBlock", () => {
 });
 
 describe("PlantUmlBlock", () => {
+  beforeEach(() => {
+    document.documentElement.removeAttribute("data-theme");
+  });
+
   it("renders a PlantUML server SVG image", () => {
-    render(<PlantUmlBlock code="@startuml\nAlice -> Bob\n@enduml" />);
+    render(<PlantUmlBlock code={"@startuml\nAlice -> Bob\n@enduml"} />);
 
     expect(screen.getByAltText("PlantUML diagram")).toHaveAttribute(
       "src",
@@ -197,16 +205,59 @@ describe("PlantUmlBlock", () => {
     expect(screen.getByTitle("Copy code")).toBeInTheDocument();
   });
 
-  it("opens zoom with the PlantUML image URL", () => {
+  it("opens zoom with fetched PlantUML SVG", async () => {
     const onZoom = vi.fn();
-    render(<PlantUmlBlock code="@startuml\nAlice -> Bob\n@enduml" onZoom={onZoom} />);
+    vi.mocked(fetch).mockResolvedValue({
+      ok: true,
+      text: () => Promise.resolve("<svg>plantuml</svg>"),
+    } as Response);
+    render(<PlantUmlBlock code={"@startuml\nAlice -> Bob\n@enduml"} onZoom={onZoom} />);
 
     fireEvent.click(screen.getByTitle("Zoom"));
 
-    expect(onZoom).toHaveBeenCalledWith({
-      type: "image",
-      src: "https://www.plantuml.com/plantuml/svg/encoded-plantuml",
-      alt: "PlantUML diagram",
+    await waitFor(() => {
+      expect(fetch).toHaveBeenCalledWith("https://www.plantuml.com/plantuml/svg/encoded-plantuml");
+      expect(onZoom).toHaveBeenCalledWith({ type: "svg", svg: "<svg>plantuml</svg>" });
     });
+  });
+
+  it("falls back to the PlantUML image URL when SVG fetch fails", async () => {
+    const onZoom = vi.fn();
+    vi.mocked(fetch).mockRejectedValue(new Error("cors"));
+    render(<PlantUmlBlock code={"@startuml\nAlice -> Bob\n@enduml"} onZoom={onZoom} />);
+
+    fireEvent.click(screen.getByTitle("Zoom"));
+
+    await waitFor(() => {
+      expect(onZoom).toHaveBeenCalledWith({
+        type: "image",
+        src: "https://www.plantuml.com/plantuml/svg/encoded-plantuml",
+        alt: "PlantUML diagram",
+      });
+    });
+  });
+
+  it("uses a dark PlantUML theme in dark mode", () => {
+    document.documentElement.setAttribute("data-theme", "dark");
+
+    render(<PlantUmlBlock code={"@startuml\nAlice -> Bob\n@enduml"} />);
+
+    expect(screen.getByAltText("PlantUML diagram")).toHaveAttribute(
+      "src",
+      "https://www.plantuml.com/plantuml/svg/encoded-dark-plantuml",
+    );
+    expect(plantumlEncoder.encode).toHaveBeenCalledWith(
+      "!theme cyborg\n@startuml\nAlice -> Bob\n@enduml",
+    );
+  });
+
+  it("does not override an explicit PlantUML theme", () => {
+    document.documentElement.setAttribute("data-theme", "dark");
+
+    render(<PlantUmlBlock code={"!theme plain\n@startuml\nAlice -> Bob\n@enduml"} />);
+
+    expect(plantumlEncoder.encode).toHaveBeenCalledWith(
+      "!theme plain\n@startuml\nAlice -> Bob\n@enduml",
+    );
   });
 });
