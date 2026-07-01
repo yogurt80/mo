@@ -16,7 +16,6 @@ export function ZoomModal({ content, onClose }: ZoomModalProps) {
   const viewportRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
   const panzoomRef = useRef<PanZoom | null>(null);
-  const mouseDownPos = useRef<{ x: number; y: number } | null>(null);
 
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
@@ -93,25 +92,12 @@ export function ZoomModal({ content, onClose }: ZoomModalProps) {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/20 p-8 backdrop-blur-[1px]"
-      onMouseDown={(e) => {
-        mouseDownPos.current = { x: e.clientX, y: e.clientY };
-      }}
-      onMouseUp={(e) => {
-        const down = mouseDownPos.current;
-        mouseDownPos.current = null;
-        if (!down) return;
-        if (Math.hypot(e.clientX - down.x, e.clientY - down.y) > 5) return;
-        const t = e.target as HTMLElement;
-        if (t.closest("button") || t.closest("a")) return;
-        if (contentRef.current?.contains(t)) return;
-        onClose();
-      }}
+      className="fixed inset-0 z-50 bg-gh-bg"
       role="dialog"
       aria-modal="true"
       aria-label="Zoom viewer"
     >
-      <div className="relative h-[calc(100vh-64px)] w-[calc(100vw-64px)] max-w-[1400px] rounded-md border border-gh-border bg-gh-bg shadow-2xl">
+      <div className="relative h-screen w-screen bg-gh-bg">
         <button
           type="button"
           className="absolute right-3 top-3 z-20 flex items-center justify-center rounded-md p-1.5 cursor-pointer text-gh-text-secondary hover:bg-gh-bg-hover hover:text-gh-text transition-colors"
@@ -156,7 +142,7 @@ export function ZoomModal({ content, onClose }: ZoomModalProps) {
 
         <div
           ref={viewportRef}
-          className="h-full w-full cursor-grab overflow-hidden rounded-md active:cursor-grabbing"
+          className="h-full w-full cursor-grab overflow-hidden active:cursor-grabbing"
         >
           <div
             ref={contentRef}
