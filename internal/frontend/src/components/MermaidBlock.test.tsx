@@ -11,9 +11,7 @@ vi.mock("mermaid", () => ({
 
 vi.mock("plantuml-encoder", () => ({
   default: {
-    encode: vi.fn((source: string) =>
-      source.includes("!theme cyborg") ? "encoded-dark-plantuml" : "encoded-plantuml",
-    ),
+    encode: vi.fn(() => "encoded-plantuml"),
   },
 }));
 
@@ -237,18 +235,16 @@ describe("PlantUmlBlock", () => {
     });
   });
 
-  it("uses a dark PlantUML theme in dark mode", () => {
+  it("uses the dark PlantUML server format in dark mode", () => {
     document.documentElement.setAttribute("data-theme", "dark");
 
     render(<PlantUmlBlock code={"@startuml\nAlice -> Bob\n@enduml"} />);
 
     expect(screen.getByAltText("PlantUML diagram")).toHaveAttribute(
       "src",
-      "https://www.plantuml.com/plantuml/svg/encoded-dark-plantuml",
+      "https://www.plantuml.com/plantuml/dsvg/encoded-plantuml",
     );
-    expect(plantumlEncoder.encode).toHaveBeenCalledWith(
-      "!theme cyborg\n@startuml\nAlice -> Bob\n@enduml",
-    );
+    expect(plantumlEncoder.encode).toHaveBeenCalledWith("@startuml\nAlice -> Bob\n@enduml");
   });
 
   it("does not override an explicit PlantUML theme", () => {

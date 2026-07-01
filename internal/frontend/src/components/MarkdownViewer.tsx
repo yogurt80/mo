@@ -8,7 +8,6 @@ import rehypeSlug from "rehype-slug";
 import rehypeKatex from "rehype-katex";
 import { rehypeGithubAlerts } from "rehype-github-alerts";
 import "katex/dist/katex.min.css";
-import { codeToHtml } from "shiki";
 import mermaid from "mermaid";
 import plantumlEncoder from "plantuml-encoder";
 import { fetchFileContent, openRelativeFile } from "../hooks/useApi";
@@ -157,21 +156,14 @@ let mermaidCounter = 0;
 let mermaidQueue: Promise<void> = Promise.resolve();
 
 const PLANTUML_SERVER = "https://www.plantuml.com/plantuml";
-const PLANTUML_DARK_THEME = "cyborg";
 
 function getCurrentTheme(): "light" | "dark" {
   return document.documentElement.getAttribute("data-theme") === "dark" ? "dark" : "light";
 }
 
-export function applyPlantUmlTheme(code: string, theme: "light" | "dark"): string {
-  if (theme !== "dark" || /^\s*!theme\s+/im.test(code)) {
-    return code;
-  }
-  return `!theme ${PLANTUML_DARK_THEME}\n${code}`;
-}
-
 function buildPlantUmlSrc(code: string, theme: "light" | "dark"): string {
-  return `${PLANTUML_SERVER}/svg/${plantumlEncoder.encode(applyPlantUmlTheme(code, theme))}`;
+  const format = theme === "dark" ? "dsvg" : "svg";
+  return `${PLANTUML_SERVER}/${format}/${plantumlEncoder.encode(code)}`;
 }
 
 function cleanupMermaidErrors() {
@@ -512,41 +504,10 @@ function CodeBlockCopyButton({ code, themed = false }: { code: string; themed?: 
 }
 
 function CodeBlock({ language, code }: { language: string; code: string }) {
-  const [html, setHtml] = useState("");
-
-  useEffect(() => {
-    let cancelled = false;
-    codeToHtml(code, { lang: language, theme: "github-dark" })
-      .then((result) => {
-        if (!cancelled) setHtml(result);
-      })
-      .catch(() => {
-        // Fallback: if language not supported, try plaintext
-        if (!cancelled) {
-          codeToHtml(code, { lang: "text", theme: "github-dark" })
-            .then((result) => {
-              if (!cancelled) setHtml(result);
-            })
-            .catch(() => {});
-        }
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [code, language]);
-
-  if (html) {
-    return (
-      <div className="relative group">
-        <div dangerouslySetInnerHTML={{ __html: html }} />
-        <CodeBlockCopyButton code={code} />
-      </div>
-    );
-  }
   return (
     <div className="relative group">
       <pre>
-        <code>{code}</code>
+        <code className={`language-${language}`}>{code}</code>
       </pre>
       <CodeBlockCopyButton code={code} />
     </div>
@@ -567,35 +528,9 @@ function FrontmatterBlock({ yaml }: { yaml: string }) {
 }
 
 function HighlightedView({ content, language }: { content: string; language: string }) {
-  const [html, setHtml] = useState("");
-
-  useEffect(() => {
-    let cancelled = false;
-    setHtml("");
-    codeToHtml(content, { lang: language, theme: "github-dark" })
-      .then((result) => {
-        if (!cancelled) setHtml(result);
-      })
-      .catch(() => {
-        if (!cancelled) {
-          codeToHtml(content, { lang: "text", theme: "github-dark" })
-            .then((result) => {
-              if (!cancelled) setHtml(result);
-            })
-            .catch(() => {});
-        }
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [content, language]);
-
-  if (html) {
-    return <div className="[&_pre]:!rounded-none" dangerouslySetInnerHTML={{ __html: html }} />;
-  }
   return (
     <pre>
-      <code>{content}</code>
+      <code className={`language-${language}`}>{content}</code>
     </pre>
   );
 }

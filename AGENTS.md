@@ -5,7 +5,7 @@ This repository is a fork of `github.com/k1LoW/mo`. Keep changes small and easy 
 ## Fork Changes
 
 - Added PlantUML diagram support in fenced Markdown code blocks via `plantuml-encoder` and the public PlantUML SVG server.
-- PlantUML diagrams automatically use the `cyborg` theme when the app is in dark mode, unless the diagram already declares a `!theme`.
+- PlantUML diagrams use the public PlantUML `/svg/` output in light mode and `/dsvg/` output in dark mode; diagram themes should be declared in Markdown source.
 - Added a shared diagram zoom modal based on `panzoom` for Mermaid and PlantUML diagrams.
 - The zoom modal uses a viewport-filling, theme-aware panel with centered auto-fit content, drag panning, and Option-wheel zooming.
 - PlantUML zoom fetches SVG text for vector preview and falls back to opening the SVG image URL if the fetch fails.

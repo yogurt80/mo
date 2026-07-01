@@ -12,9 +12,7 @@ vi.mock("mermaid", () => ({
 
 vi.mock("plantuml-encoder", () => ({
   default: {
-    encode: vi.fn((source: string) =>
-      source.includes("!theme cyborg") ? "encoded-dark-plantuml" : "encoded-plantuml",
-    ),
+    encode: vi.fn(() => "encoded-plantuml"),
   },
 }));
 

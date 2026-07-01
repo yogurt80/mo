@@ -15,9 +15,10 @@
 - GitHub-flavored Markdown (tables, task lists, footnotes, etc.)
 - Syntax highlighting ([Shiki](https://shiki.style/))
 - [Mermaid](https://mermaid.js.org/) diagram rendering
+- [PlantUML](https://plantuml.com/) diagram rendering
 - LaTeX math rendering ([KaTeX](https://katex.org/))
 - [GitHub Alerts](https://docs.github.com/en/get-started/writing-on-github/getting-started-with-writing-and-formatting-on-github/basic-writing-and-formatting-syntax#alerts) (admonitions)
-- Fullscreen zoom modal for images and Mermaid diagrams
+- Fullscreen zoom modal for images, Mermaid diagrams, and PlantUML diagrams
 - <img src="images/icons/theme-light.svg" width="16" height="16" alt="dark theme"> Dark / <img src="images/icons/theme-dark.svg" width="16" height="16" alt="light theme"> light theme
 - <img src="images/icons/group.svg" width="16" height="16" alt="group"> File grouping
 - <img src="images/icons/toc.svg" width="16" height="16" alt="toc"> Table of contents panel
@@ -71,6 +72,34 @@ $ mo < notes.md
 ```
 
 The content is loaded in-memory with a generated name (`stdin-<hash>.md`). Piping the same content again reuses the existing entry (deduplicated by content hash).
+
+### PlantUML diagrams
+
+`mo` renders fenced `plantuml` and `puml` code blocks through the public PlantUML SVG server. In dark mode, it switches the PlantUML server output format from `/svg/` to `/dsvg/`, but it does not inject or override diagram themes.
+
+Declare visual themes in the Markdown source so diagrams render consistently across tools:
+
+```plantuml
+@startuml
+!theme spacelab
+Alice -> Bob : hello
+@enduml
+```
+
+For C4-PlantUML diagrams, use a C4-compatible theme before including the C4 library:
+
+```plantuml
+@startuml
+!theme C4_blue_new from <C4/themes>
+!include <C4/C4_Context>
+
+Person(user, "User")
+System(system, "System")
+Rel(user, system, "Uses")
+@enduml
+```
+
+The C4 `!theme` line must appear before the C4 `!include` line because C4-PlantUML defines its own colors and relationship styles.
 
 ### Single server, multiple files
 
